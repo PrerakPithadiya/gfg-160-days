@@ -39,7 +39,7 @@ class Solution {
         if (head == null || head.next == null || k == 0) {
             return head;
         }
-
+        
         // First, find the length of the list and the last node
         Node current = head;
         Node last = null;
