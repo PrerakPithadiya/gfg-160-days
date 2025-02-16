@@ -2,151 +2,132 @@
 import java.util.*;
 
 /**
- * This class implements serialization and deserialization of a binary tree. The
- * tree is serialized into an ArrayList of integers and can be deserialized back
- * into a tree structure.
+ * This class provides functionality to serialize and deserialize binary trees.
+ * Serialization converts a binary tree into a list representation that can be
+ * easily stored or transmitted. Deserialization reconstructs the binary tree
+ * from this list representation.
  */
 class Tree {
 
     /**
-     * Node class representing a binary tree node
-     */
-    static class Node {
-
-        int data;
-        Node left, right;
-
-        Node(int data) {
-            this.data = data;
-            left = right = null;
-        }
-    }
-
-    /**
-     * Serializes a binary tree into an ArrayList of integers. Uses level-order
-     * traversal (BFS) to convert the tree structure. Null nodes are represented
-     * as -1 in the resulting list.
+     * Serializes a binary tree into an ArrayList of integers. The tree is
+     * traversed in pre-order (root-left-right) fashion. Null nodes are
+     * represented by -1 in the serialized list.
      *
-     * @param root The root node of the binary tree to serialize
+     * @param root The root node of the binary tree to be serialized
      * @return ArrayList containing the serialized representation of the tree
      */
     public ArrayList<Integer> serialize(Node root) {
-        ArrayList<Integer> result = new ArrayList<>();
-        serializeHelper(root, result);
-        return result;
+        ArrayList<Integer> list = new ArrayList<>();
+        serializeHelper(root, list);
+        return list;
     }
 
     /**
-     * Helper method for serialization that implements the BFS traversal.
+     * Helper method for serialization that performs the recursive pre-order
+     * traversal.
      *
-     * @param root The root node of the tree/subtree
-     * @param result The ArrayList to store the serialized representation
+     * @param root The current node being processed
+     * @param list The list to store the serialized representation
      */
-    private void serializeHelper(Node root, ArrayList<Integer> result) {
+    private void serializeHelper(Node root, ArrayList<Integer> list) {
         if (root == null) {
+            list.add(-1); // -1 represents null node
             return;
         }
-
-        Queue<Node> queue = new LinkedList<>();
-        queue.offer(root);
-
-        while (!queue.isEmpty()) {
-            Node current = queue.poll();
-
-            if (current == null) {
-                result.add(-1);  // Using -1 to represent null nodes
-                continue;
-            }
-
-            result.add(current.data);
-
-            queue.offer(current.left);
-            queue.offer(current.right);
-        }
-
-        // Remove trailing nulls from the end of the list
-        while (!result.isEmpty() && result.get(result.size() - 1) == -1) {
-            result.remove(result.size() - 1);
-        }
+        list.add(root.data);
+        serializeHelper(root.left, list);
+        serializeHelper(root.right, list);
     }
 
     /**
-     * Deserializes an ArrayList of integers back into a binary tree structure.
+     * Deserializes an ArrayList of integers back into a binary tree. The list
+     * should be in the format produced by the serialize method.
      *
      * @param arr The ArrayList containing the serialized tree representation
      * @return The root node of the reconstructed binary tree
      */
     public Node deSerialize(ArrayList<Integer> arr) {
-        if (arr == null || arr.isEmpty()) {
-            return null;
-        }
-
-        Node root = new Node(arr.get(0));
-
-        Queue<Node> queue = new LinkedList<>();
-        queue.offer(root);
-
-        for (int i = 1; i < arr.size(); i += 2) {
-            Node current = queue.poll();
-            if (current == null) {
-                continue;
-            }
-
-            // Process left child
-            if (i < arr.size() && arr.get(i) != -1) {
-                current.left = new Node(arr.get(i));
-                queue.offer(current.left);
-            }
-
-            // Process right child
-            if (i + 1 < arr.size() && arr.get(i + 1) != -1) {
-                current.right = new Node(arr.get(i + 1));
-                queue.offer(current.right);
-            }
-        }
-
-        return root;
+        int[] index = new int[]{0};
+        return deSerializeHelper(arr, index);
     }
 
     /**
-     * Main method containing test cases for the Tree
-     * serialization/deserialization
+     * Helper method for deserialization that recursively constructs the tree.
+     *
+     * @param arr The ArrayList containing the serialized tree
+     * @param index Array containing single index to track current position in
+     * list
+     * @return The current node in the reconstructed tree
+     */
+    private Node deSerializeHelper(ArrayList<Integer> arr, int[] index) {
+        if (index[0] >= arr.size() || arr.get(index[0]) == -1) {
+            index[0]++;
+            return null;
+        }
+        Node node = new Node(arr.get(index[0]));
+        index[0]++;
+        node.left = deSerializeHelper(arr, index);
+        node.right = deSerializeHelper(arr, index);
+        return node;
+    }
+
+    /**
+     * Test cases to verify the functionality of serialization and
+     * deserialization.
      */
     public static void main(String[] args) {
         Tree tree = new Tree();
 
-        // Test Case 1: Simple tree with three nodes
-        Node root1 = new Node(1);
-        root1.left = new Node(2);
-        root1.right = new Node(3);
-        ArrayList<Integer> serialized1 = tree.serialize(root1);
-        System.out.println("Test Case 1 - Serialized: " + serialized1);
-        Node deserialized1 = tree.deSerialize(serialized1);
-        System.out.println("Test Case 1 - Verification: " + tree.serialize(deserialized1));
+        // Test Case 1: Empty tree
+        Node emptyRoot = null;
+        ArrayList<Integer> serializedEmpty = tree.serialize(emptyRoot);
+        Node deserializedEmpty = tree.deSerialize(serializedEmpty);
+        assert deserializedEmpty == null : "Empty tree test failed";
 
-        // Test Case 2: Complex tree with multiple levels
-        Node root2 = new Node(1);
-        root2.left = new Node(2);
-        root2.right = new Node(3);
-        root2.left.left = new Node(4);
-        root2.right.right = new Node(5);
-        ArrayList<Integer> serialized2 = tree.serialize(root2);
-        System.out.println("Test Case 2 - Serialized: " + serialized2);
-        Node deserialized2 = tree.deSerialize(serialized2);
-        System.out.println("Test Case 2 - Verification: " + tree.serialize(deserialized2));
+        // Test Case 2: Single node tree
+        Node singleRoot = new Node(1);
+        ArrayList<Integer> serializedSingle = tree.serialize(singleRoot);
+        Node deserializedSingle = tree.deSerialize(serializedSingle);
+        assert deserializedSingle.data == 1 : "Single node tree test failed";
 
-        // Test Case 3: Empty tree
-        Node root3 = null;
-        ArrayList<Integer> serialized3 = tree.serialize(root3);
-        System.out.println("Test Case 3 - Serialized: " + serialized3);
-        Node deserialized3 = tree.deSerialize(serialized3);
-        System.out.println("Test Case 3 - Verification: " + tree.serialize(deserialized3));
+        // Test Case 3: Complete binary tree
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+        ArrayList<Integer> serialized = tree.serialize(root);
+        Node deserialized = tree.deSerialize(serialized);
 
-        // Test Case 4: Single node tree
-        Node root4 = new Node(1);
-        ArrayList<Integer> serialized4 = tree.serialize(root4);
-        System.out.println("Test Case 4 - Serialized: " + serialized4);
-        Node deserialized4 = tree.deSerialize(serialized4);
-        System.out.println("Test Case 4 - Verification: " + tree.serialize(deserialized4));
+        // Verify the structure of deserialized tree
+        assert deserialized.data == 1 : "Root node mismatch";
+        assert deserialized.left.data == 2 : "Left child mismatch";
+        assert deserialized.right.data == 3 : "Right child mismatch";
+        assert deserialized.left.left.data == 4 : "Left-left child mismatch";
+        assert deserialized.left.right.data == 5 : "Left-right child mismatch";
+
+        System.out.println("All test cases passed successfully!");
+    }
+}
+
+/**
+ * Node class representing a node in the binary tree. Each node contains an
+ * integer value and references to left and right child nodes.
+ */
+class Node {
+
+    int data;
+    Node left, right;
+
+    /**
+     * Constructs a new Node with the given data value.
+     *
+     * @param data The integer value to be stored in the node
+     */
+    Node(int data) {
+        this.data = data;
+        this.left = null;
+        this.right = null;
     }
 }
